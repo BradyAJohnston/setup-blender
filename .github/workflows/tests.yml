@@ -18,7 +18,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             - name: Install Blender
-              uses: BradyAJohnston/setup-blender@v1
+              uses: actions.yml
             - name: Run tests in Blender
               uses: setup-blender
               with:
