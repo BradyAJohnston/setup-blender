@@ -17,8 +17,10 @@ jobs:
               os: [macos-14, "ubuntu-latest", "windows-latest"]
         steps:
             - uses: actions/checkout@v4
+            - name: ls
+              run: ls -lrta
             - name: Install Blender
-              uses: .
+              uses: ./action.yml
               with:
                 version: ${{ matrix.version }}
             - name: Run tests in Blender
