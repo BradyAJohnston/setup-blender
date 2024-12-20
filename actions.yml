@@ -1,7 +1,7 @@
 name: 'Setup Blender'
 description: 'Downloads and installs Blender for use in GitHub Actions'
 inputs:
-  blender-version:
+  version:
     description: 'Blender version to install (e.g. 4.2)'
     required: true
   
