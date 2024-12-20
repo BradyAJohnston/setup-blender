@@ -20,7 +20,7 @@ jobs:
             - name: ls
               run: ls -lrta
             - name: Install Blender
-              uses: ./action.yml
+              uses: ./
               with:
                 version: ${{ matrix.version }}
             - name: Run tests in Blender
