@@ -13,7 +13,7 @@ runs:
       shell: bash
       run: |
         BLENDER_BASE_VERSION=$(echo "${{ inputs.version }}" | cut -d'.' -f1,2)
-        FULL_VERSION=$(echo "${{ inputs.version }}" | grep -q '^\d\+\.\d\+$' && echo "${{ inputs.version }}.0" || echo "${{ inputs.version }}")
+        FULL_VERSION=$(echo "${{ inputs.version }}" | grep -E '^\d+\.\d+$' > /dev/null && echo "${{ inputs.version }}.0" || echo "${{ inputs.version }}")
         wget -nv https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-linux-x64.tar.xz -O ./blender.tar.xz
         mkdir -p ./blender
         tar -xf ./blender.tar.xz -C ./blender --strip-components=1
