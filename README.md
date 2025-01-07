@@ -1,12 +1,18 @@
 # setup-blender
 
-Downloads and installs Blender to path, so you can just call `blender` from the termin on Mac / Linux / Windows:
+Downloads and installs Blender to path on your GHA runner, so you can just call `blender` without having to worry about installation.
 
 ```bash
 blender --version
 ```
 
-Exmaple:
+## Versions
+
+Versions can be specified with or without the patch version, as well as "daily" for the latest daily alpha builds being worked on.
+
+Examples: `4.2`, `4.3.2`, `daily`
+
+Exmaple workflow which gets blender for 3 different versions on 3 different operating systems, and then uses Blender to print the version to the console:
 ```yaml
 name: Run Tests
 
@@ -23,7 +29,7 @@ jobs:
             max-parallel: 4
             fail-fast: false
             matrix:
-              version: ["4.2", "4.3"]
+              version: ["4.2", "4.3.2", "daily"]
               os: [macos-14, "ubuntu-latest", "windows-latest"]
         steps:
             - uses: actions/checkout@v4
