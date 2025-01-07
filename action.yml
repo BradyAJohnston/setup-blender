@@ -10,7 +10,7 @@ runs:
   steps:
     - name: Set version variables
       shell: python
-      run: python set_versions.py
+      run: python ./set_versions.py
 
     - name: Install Blender Linux
       if: runner.os == 'Linux'
