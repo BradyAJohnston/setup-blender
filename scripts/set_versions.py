@@ -1,7 +1,8 @@
 import os
 import re
+import sys
 
-version = os.environ["INPUT_VERSION"]
+version = sys.argv[1]
 base_version = ".".join(version.split(".")[:2])
 full_version = version + ".0" if re.match(r"^\d+\.\d+$", version) else version
 
