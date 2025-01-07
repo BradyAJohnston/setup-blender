@@ -55,5 +55,8 @@ runs:
         } else {
           Invoke-WebRequest -Uri "https://download.blender.org/release/Blender${env:BLENDER_BASE_VERSION}/blender-${env:FULL_VERSION}-windows-x64.zip" -OutFile "blender.zip"
         }
-        Expand-Archive -Path "blender.zip" -DestinationPath "blender"
-        echo "$env:GITHUB_WORKSPACE\blender\blender-${env:FULL_VERSION}-windows-x64" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        Expand-Archive -Path "blender.zip" -DestinationPath "temp"
+        $blenderDir = Get-ChildItem -Path "temp" | Select-Object -First 1
+        Move-Item -Path $blenderDir.FullName -Destination "blender"
+        Remove-Item -Path "temp"
+        echo "$env:GITHUB_WORKSPACE\blender" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
