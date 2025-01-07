@@ -10,9 +10,9 @@ runs:
   steps:
     - name: Set version variables
       shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
-      run: python ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
-    - name: Scrape Daily URLs
-      run: python ${{ github.action_path }}/scripts/scape_versions.py
+      run: |
+        python ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
+        python ${{ github.action_path }}/scripts/scape_versions.py
 
 
     - name: Install Blender Linux
