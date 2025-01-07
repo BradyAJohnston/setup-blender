@@ -12,8 +12,9 @@ runs:
       uses: actions/setup-python@v5
     
     - name: Set version variables
-      shell: python
-      run: scripts/set_version.py
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      run: python ${{ github.action_path }}/scripts/set_versions.py
+
 
     - name: Install Blender Linux
       if: runner.os == 'Linux'
