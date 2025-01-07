@@ -12,7 +12,8 @@ runs:
       uses: actions/setup-python@v5
     
     - name: Set version variables
-      run: python scripts/set_version.py
+      shell: python
+      run: scripts/set_version.py
 
     - name: Install Blender Linux
       if: runner.os == 'Linux'
