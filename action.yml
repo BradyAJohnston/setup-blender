@@ -11,13 +11,18 @@ runs:
     - name: Set version variables
       shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: python ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
+      run: python ${{ github.action_path }}/scripts/scape_versions.py
 
 
     - name: Install Blender Linux
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        wget -nv https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-linux-x64.tar.xz -O ./blender.tar.xz
+        if [ "${{ inputs.version }}" = "daily" ]; then
+          wget -nv $BLEND_URL_LINUX_X64 -O ./blender.tar.xz
+        else
+          wget -nv https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-linux-x64.tar.xz -O ./blender.tar.xz
+        fi
         mkdir -p ./blender
         tar -xf ./blender.tar.xz -C ./blender --strip-components=1
         echo "$GITHUB_WORKSPACE/blender" >> $GITHUB_PATH
@@ -26,7 +31,11 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        curl -L -o blender.dmg https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-macos-arm64.dmg
+        if [ "${{ inputs.version }}" = "daily" ]; then
+          curl -L -o blender.dmg $BLEND_URL_MACOS_ARM64
+        else
+          curl -L -o blender.dmg https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-macos-arm64.dmg
+        fi
         hdiutil attach blender.dmg
         cp -R /Volumes/Blender/Blender.app /Applications/
         hdiutil detach /Volumes/Blender
@@ -36,6 +45,10 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        Invoke-WebRequest -Uri "https://download.blender.org/release/Blender${env:BLENDER_BASE_VERSION}/blender-${env:FULL_VERSION}-windows-x64.zip" -OutFile "blender.zip"
+        if ("${{ inputs.version }}" -eq "daily") {
+          Invoke-WebRequest -Uri $env:BLEND_URL_WINDOWS_X64 -OutFile "blender.zip"
+        } else {
+          Invoke-WebRequest -Uri "https://download.blender.org/release/Blender${env:BLENDER_BASE_VERSION}/blender-${env:FULL_VERSION}-windows-x64.zip" -OutFile "blender.zip"
+        }
         Expand-Archive -Path "blender.zip" -DestinationPath "blender"
         echo "$env:GITHUB_WORKSPACE\blender\blender-${env:FULL_VERSION}-windows-x64" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
