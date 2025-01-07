@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "bs4",
+# ]
+# ///
 import requests
 from bs4 import BeautifulSoup
 import json

@@ -16,7 +16,7 @@ runs:
       shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: |
         uv pip install bs4
-        uv run ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
+        python ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
         uv run ${{ github.action_path }}/scripts/scrape_daily.py
 
 
