@@ -12,7 +12,7 @@ runs:
       shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: |
         python ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
-        python ${{ github.action_path }}/scripts/scrape_versions.py
+        python ${{ github.action_path }}/scripts/scrape_daily.py
 
 
     - name: Install Blender Linux
