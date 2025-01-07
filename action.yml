@@ -8,11 +8,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # - name: Setup Python
-    #   uses: actions/setup-python@v5
-    #     with: 
-    #       python-version: '3.11'
-    
     - name: Set version variables
       shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: python ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
