@@ -8,8 +8,10 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+    
     - name: Set version variables
-      shell: python
       run: python scripts/set_version.py
 
     - name: Install Blender Linux
