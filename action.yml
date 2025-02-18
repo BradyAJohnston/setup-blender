@@ -20,11 +20,6 @@ runs:
     - name: Install Blender Linux
       if: runner.os == 'Linux'
       shell: bash
-      env:
-        IS_DAILY: ${{ env.IS_DAILY }}
-        BLEND_URL_LINUX_X64: ${{ env.BLEND_URL_LINUX_X64 }}
-        BLENDER_BASE_VERSION: ${{ env.BLENDER_BASE_VERSION }}
-        FULL_VERSION: ${{ env.FULL_VERSION }}
       run: |
         if [ "${IS_DAILY}" == "true" ]; then
           wget -nv $BLEND_URL_LINUX_X64 -O ./blender.tar.xz
@@ -38,11 +33,6 @@ runs:
     - name: Install Blender MacOS ARM
       if: runner.os == 'macOS'
       shell: bash
-      env:
-        IS_DAILY: ${{ env.IS_DAILY }}
-        BLEND_URL_MACOS_ARM64: ${{ env.BLEND_URL_MACOS_ARM64 }}
-        BLENDER_BASE_VERSION: ${{ env.BLENDER_BASE_VERSION }}
-        FULL_VERSION: ${{ env.FULL_VERSION }}
       run: |
         if [ "${IS_DAILY}" == "true" ]; then
           curl -L -o blender.dmg $BLEND_URL_MACOS_ARM64
@@ -57,11 +47,6 @@ runs:
     - name: Install Blender Windows
       if: runner.os == 'Windows'
       shell: pwsh
-      env:
-        IS_DAILY: ${{ env.IS_DAILY }}
-        BLEND_URL_WINDOWS_X64: ${{ env.BLEND_URL_WINDOWS_X64 }}
-        BLENDER_BASE_VERSION: ${{ env.BLENDER_BASE_VERSION }}
-        FULL_VERSION: ${{ env.FULL_VERSION }}
       run: |
         if ($env:IS_DAILY -eq $true) {
           Invoke-WebRequest -Uri $env:BLEND_URL_WINDOWS_X64 -OutFile "blender.zip"
