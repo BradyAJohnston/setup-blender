@@ -15,8 +15,7 @@ runs:
     - name: Set version variables
       shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: |
-        python ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
-        uv run ${{ github.action_path }}/scripts/scrape_daily.py
+        uv run ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
 
 
     - name: Install Blender Linux
