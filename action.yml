@@ -26,7 +26,7 @@ runs:
         BLENDER_BASE_VERSION: ${{ env.BLENDER_BASE_VERSION }}
         FULL_VERSION: ${{ env.FULL_VERSION }}
       run: |
-        if [ "$IS_DAILY" = "true" ]; then
+        if [ "${IS_DAILY}" == "true" ]; then
           wget -nv $BLEND_URL_LINUX_X64 -O ./blender.tar.xz
         else
           wget -nv https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-linux-x64.tar.xz -O ./blender.tar.xz
@@ -44,7 +44,7 @@ runs:
         BLENDER_BASE_VERSION: ${{ env.BLENDER_BASE_VERSION }}
         FULL_VERSION: ${{ env.FULL_VERSION }}
       run: |
-        if [ "$IS_DAILY" = "true" ]; then
+        if [ "${IS_DAILY}" == "true" ]; then
           curl -L -o blender.dmg $BLEND_URL_MACOS_ARM64
         else
           curl -L -o blender.dmg https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-macos-arm64.dmg
@@ -63,7 +63,7 @@ runs:
         BLENDER_BASE_VERSION: ${{ env.BLENDER_BASE_VERSION }}
         FULL_VERSION: ${{ env.FULL_VERSION }}
       run: |
-        if ($env:IS_DAILY -eq "true") {
+        if ($env:IS_DAILY -eq $true) {
           Invoke-WebRequest -Uri $env:BLEND_URL_WINDOWS_X64 -OutFile "blender.zip"
         } else {
           Invoke-WebRequest -Uri "https://download.blender.org/release/Blender${env:BLENDER_BASE_VERSION}/blender-${env:FULL_VERSION}-windows-x64.zip" -OutFile "blender.zip"
