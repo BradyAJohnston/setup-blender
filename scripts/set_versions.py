@@ -19,6 +19,19 @@ def fetch_url(url: str) -> BeautifulSoup:
     return BeautifulSoup(response.text, "html.parser")
 
 
+def write_github_env(env_vars: dict) -> None:
+    """Write environment variables to GITHUB_ENV or print them locally."""
+    try:
+        with open(os.environ["GITHUB_ENV"], "a") as f:
+            for key, value in env_vars.items():
+                f.write(f"{key}={value}\n")
+                print(f"Set {key}={value}")
+    except KeyError:
+        print("Local environment detected, values:")
+        for key, value in env_vars.items():
+            print(f"{key}={value}")
+
+
 def get_release_versions() -> List[str]:
     print("Fetching available Blender release versions...")
     soup = fetch_url("https://download.blender.org/release/")
@@ -50,7 +63,7 @@ def get_latest_patch_version(base_version: str) -> str:
     return full_version
 
 
-def get_latest_builds() -> None:
+def get_latest_builds() -> dict:
     print("Fetching latest daily builds...")
     soup = fetch_url("https://builder.blender.org/download/daily/")
 
@@ -78,31 +91,18 @@ def get_latest_builds() -> None:
         elif "linux" in href:
             platform_links["linux"]["x64"].append(href)
 
-    try:
-        with open(os.environ["GITHUB_ENV"], "a") as f:
-            for platform, archs in platform_links.items():
-                for arch, links in archs.items():
-                    if links:
-                        latest = max(
-                            links,
-                            key=lambda x: re.search(
-                                r"blender-(\d+\.\d+\.\d+)", x
-                            ).group(1),
-                        )
-                        env_name = f"BLEND_URL_{platform.upper()}_{arch.upper()}"
-                        f.write(f"{env_name}={latest}\n")
-                        print(f"Set {env_name}={latest}")
-    except KeyError:
-        print("Local environment detected, URLs:")
-        for platform, archs in platform_links.items():
-            for arch, links in archs.items():
-                if links:
-                    latest = max(
-                        links,
-                        key=lambda x: re.search(r"blender-(\d+\.\d+\.\d+)", x).group(1),
-                    )
-                    env_name = f"BLEND_URL_{platform.upper()}_{arch.upper()}"
-                    print(f"{env_name}={latest}")
+    env_vars = {}
+    for platform, archs in platform_links.items():
+        for arch, links in archs.items():
+            if links:
+                latest = max(
+                    links,
+                    key=lambda x: re.search(r"blender-(\d+\.\d+\.\d+)", x).group(1),
+                )
+                env_name = f"BLEND_URL_{platform.upper()}_{arch.upper()}"
+                env_vars[env_name] = latest
+
+    return env_vars
 
 
 def get_daily_versions() -> List[str]:
@@ -125,6 +125,8 @@ def get_daily_versions() -> List[str]:
 
 
 def set_versions(version: str) -> Tuple[str, str, bool]:
+    env_vars = {}
+
     if version.lower() == "daily":
         available_versions = get_daily_versions()
         if not available_versions:
@@ -132,47 +134,48 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
         full_version = available_versions[-1]
         base_version = ".".join(full_version.split(".")[:2])
         print(f"Using latest daily build: {full_version}")
-        return base_version, full_version, True
-
-    base_version = ".".join(version.split(".")[:2])
-    available_versions = get_release_versions()
-
-    if base_version in available_versions:
-        full_version = (
-            get_latest_patch_version(base_version)
-            if re.match(r"^\d+\.\d+$", version)
-            else version
-        )
-        is_daily = False
-    else:
-        print(f"Version {base_version} not found in releases, checking daily builds...")
-        daily_versions = get_daily_versions()
-        matching_versions = [v for v in daily_versions if v.startswith(base_version)]
-
-        if not matching_versions:
-            raise ValueError(
-                f"Version {base_version} not found in releases or daily builds"
-            )
-
-        full_version = matching_versions[-1]
-        print(f"Found version in daily builds: {full_version}")
         is_daily = True
+    else:
+        base_version = ".".join(version.split(".")[:2])
+        available_versions = get_release_versions()
 
-    try:
-        with open(os.environ["GITHUB_ENV"], "a") as f:
-            f.write(f"BLENDER_BASE_VERSION={base_version}\n")
-            f.write(f"FULL_VERSION={full_version}\n")
-            f.write(f"IS_DAILY={'true' if is_daily else 'false'}\n")
-        print("Environment variables set successfully")
-    except KeyError:
-        print("Local environment detected, values:")
-        print(f"BLENDER_BASE_VERSION={base_version}")
-        print(f"FULL_VERSION={full_version}")
-        print(f"IS_DAILY={'true' if is_daily else 'false'}")
+        if base_version in available_versions:
+            full_version = (
+                get_latest_patch_version(base_version)
+                if re.match(r"^\d+\.\d+$", version)
+                else version
+            )
+            is_daily = False
+        else:
+            print(
+                f"Version {base_version} not found in releases, checking daily builds..."
+            )
+            daily_versions = get_daily_versions()
+            matching_versions = [
+                v for v in daily_versions if v.startswith(base_version)
+            ]
+
+            if not matching_versions:
+                raise ValueError(
+                    f"Version {base_version} not found in releases or daily builds"
+                )
+
+            full_version = matching_versions[-1]
+            print(f"Found version in daily builds: {full_version}")
+            is_daily = True
+
+    env_vars.update(
+        {
+            "BLENDER_BASE_VERSION": base_version,
+            "FULL_VERSION": full_version,
+            "IS_DAILY": "true" if is_daily else "false",
+        }
+    )
 
     if is_daily:
-        get_latest_builds()
+        env_vars.update(get_latest_builds())
 
+    write_github_env(env_vars)
     return base_version, full_version, is_daily
 
 
@@ -183,8 +186,6 @@ def main():
 
     version = sys.argv[1]
     set_versions(version)
-    if version.lower() == "daily":
-        get_latest_builds()
 
 
 if __name__ == "__main__":
