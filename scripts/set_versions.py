@@ -117,30 +117,48 @@ def set_versions(version):
         full_version = available_versions[-1] if available_versions else "0.0.0"
         base_version = ".".join(full_version.split(".")[:2])
         print(f"Using latest daily build: {full_version}")
-    else:
-        base_version = ".".join(version.split(".")[:2])
+        return base_version, full_version, True
+
+    base_version = ".".join(version.split(".")[:2])
+
+    # First try release versions
+    available_versions = get_release_versions()
+    if base_version in available_versions:
         if re.match(r"^\d+\.\d+$", version):
-            available_versions = get_release_versions()
-            if base_version not in available_versions:
-                print(f"Version {base_version} not found in releases")
-                sys.exit(1)
             full_version = get_latest_patch_version(base_version)
         else:
             full_version = version
+        is_daily = False
+    else:
+        # If not in releases, check daily builds
+        print(f"Version {base_version} not found in releases, checking daily builds...")
+        daily_versions = get_daily_versions()
+        matching_versions = [v for v in daily_versions if v.startswith(base_version)]
+
+        if matching_versions:
+            full_version = matching_versions[-1]
+            print(f"Found version in daily builds: {full_version}")
+            is_daily = True
+        else:
+            print(f"Version {base_version} not found in releases or daily builds")
+            sys.exit(1)
 
     try:
         with open(os.environ["GITHUB_ENV"], "a") as f:
             f.write(f"BLENDER_BASE_VERSION={base_version}\n")
             f.write(f"FULL_VERSION={full_version}\n")
-            f.write(f"IS_DAILY={'true' if version.lower() == 'daily' else 'false'}\n")
+            f.write(f"IS_DAILY={str(is_daily).lower()}\n")
         print("Environment variables set successfully")
     except KeyError:
         print("GITHUB_ENV not available, printing values instead:")
         print(f"BLENDER_BASE_VERSION={base_version}")
         print(f"FULL_VERSION={full_version}")
-        print(f"IS_DAILY={'true' if version.lower() == 'daily' else 'false'}")
+        print(f"IS_DAILY={str(is_daily).lower()}")
 
-    return base_version, full_version
+    if is_daily:
+        get_latest_builds()
+
+    return base_version, full_version, is_daily
 
 
 def get_daily_versions():

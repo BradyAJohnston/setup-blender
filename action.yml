@@ -17,12 +17,11 @@ runs:
       run: |
         uv run ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
 
-
     - name: Install Blender Linux
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        if [ "${{ inputs.version }}" = "daily" ]; then
+        if [ "$IS_DAILY" = "true" ]; then
           wget -nv $BLEND_URL_LINUX_X64 -O ./blender.tar.xz
         else
           wget -nv https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-linux-x64.tar.xz -O ./blender.tar.xz
@@ -35,7 +34,7 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        if [ "${{ inputs.version }}" = "daily" ]; then
+        if [ "$IS_DAILY" = "true" ]; then
           curl -L -o blender.dmg $BLEND_URL_MACOS_ARM64
         else
           curl -L -o blender.dmg https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-macos-arm64.dmg
@@ -49,7 +48,7 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        if ("${{ inputs.version }}" -eq "daily") {
+        if ($env:IS_DAILY -eq "true") {
           Invoke-WebRequest -Uri $env:BLEND_URL_WINDOWS_X64 -OutFile "blender.zip"
         } else {
           Invoke-WebRequest -Uri "https://download.blender.org/release/Blender${env:BLENDER_BASE_VERSION}/blender-${env:FULL_VERSION}-windows-x64.zip" -OutFile "blender.zip"
@@ -59,3 +58,4 @@ runs:
         Move-Item -Path $blenderDir.FullName -Destination "../blender"
         Remove-Item -Path "temp"
         echo "$env:GITHUB_WORKSPACE/../blender" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
