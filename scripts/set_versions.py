@@ -63,7 +63,7 @@ def get_latest_patch_version(base_version: str) -> str:
     return full_version
 
 
-def get_latest_builds() -> dict:
+def get_latest_builds(target_version: str = None) -> dict:
     print("Fetching latest daily builds...")
     soup = fetch_url("https://builder.blender.org/download/daily/")
 
@@ -80,6 +80,10 @@ def get_latest_builds() -> dict:
     for link in build_container.find_all("a", href=True):
         href = link["href"]
         if not href.endswith((".zip", ".dmg", ".tar.xz")):
+            continue
+
+        # Skip if target_version is specified and doesn't match
+        if target_version and not re.search(f"blender-{target_version}", href):
             continue
 
         if "windows" in href:
@@ -119,7 +123,7 @@ def get_daily_versions() -> List[str]:
         if (match := re.search(r"blender-(\d+\.\d+\.\d+)", link["href"]))
     }
 
-    sorted_versions = sorted(versions)
+    sorted_versions = sorted(versions, key=lambda x: [int(n) for n in x.split(".")])
     print(f"Found {len(sorted_versions)} daily versions")
     return sorted_versions
 
@@ -135,6 +139,7 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
         base_version = ".".join(full_version.split(".")[:2])
         print(f"Using latest daily build: {full_version}")
         is_daily = True
+        target_version = full_version
     else:
         base_version = ".".join(version.split(".")[:2])
         available_versions = get_release_versions()
@@ -146,14 +151,13 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
                 else version
             )
             is_daily = False
+            target_version = None
         else:
             print(
                 f"Version {base_version} not found in releases, checking daily builds..."
             )
             daily_versions = get_daily_versions()
-            matching_versions = [
-                v for v in daily_versions if v.startswith(base_version)
-            ]
+            matching_versions = [v for v in daily_versions if v.startswith(version)]
 
             if not matching_versions:
                 raise ValueError(
@@ -163,6 +167,7 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
             full_version = matching_versions[-1]
             print(f"Found version in daily builds: {full_version}")
             is_daily = True
+            target_version = full_version
 
     env_vars.update(
         {
@@ -173,7 +178,7 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
     )
 
     if is_daily:
-        env_vars.update(get_latest_builds())
+        env_vars.update(get_latest_builds(target_version))
 
     write_github_env(env_vars)
     return base_version, full_version, is_daily
