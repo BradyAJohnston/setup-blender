@@ -43,7 +43,9 @@ def get_release_versions() -> List[str]:
     }
 
     sorted_versions = sorted(versions, key=lambda x: [int(n) for n in x.split(".")])
-    print(f"Found {len(sorted_versions)} release versions")
+    print(
+        f"Found {len(sorted_versions)} release versions: {', '.join(sorted_versions)}"
+    )
     return sorted_versions
 
 
@@ -82,7 +84,6 @@ def get_latest_builds(target_version: str = None) -> dict:
         if not href.endswith((".zip", ".dmg", ".tar.xz")):
             continue
 
-        # Skip if target_version is specified and doesn't match
         if target_version and not re.search(f"blender-{target_version}", href):
             continue
 
@@ -124,17 +125,20 @@ def get_daily_versions() -> List[str]:
     }
 
     sorted_versions = sorted(versions, key=lambda x: [int(n) for n in x.split(".")])
-    print(f"Found {len(sorted_versions)} daily versions")
+    print(f"Found {len(sorted_versions)} daily versions: {', '.join(sorted_versions)}")
     return sorted_versions
 
 
 def set_versions(version: str) -> Tuple[str, str, bool]:
     env_vars = {}
+    checked_locations = []
 
     if version.lower() == "daily":
         available_versions = get_daily_versions()
         if not available_versions:
-            raise ValueError("No daily versions found")
+            raise ValueError(
+                "No daily versions found at https://builder.blender.org/download/"
+            )
         full_version = available_versions[-1]
         base_version = ".".join(full_version.split(".")[:2])
         print(f"Using latest daily build: {full_version}")
@@ -143,6 +147,9 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
     else:
         base_version = ".".join(version.split(".")[:2])
         available_versions = get_release_versions()
+        checked_locations.append(
+            f"Release versions at https://download.blender.org/release/"
+        )
 
         if base_version in available_versions:
             full_version = (
@@ -157,12 +164,21 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
                 f"Version {base_version} not found in releases, checking daily builds..."
             )
             daily_versions = get_daily_versions()
+            checked_locations.append(
+                f"Daily builds at https://builder.blender.org/download/"
+            )
             matching_versions = [v for v in daily_versions if v.startswith(version)]
 
             if not matching_versions:
-                raise ValueError(
-                    f"Version {base_version} not found in releases or daily builds"
+                error_msg = (
+                    f"Version {version} not found in any of the following locations:\n"
                 )
+                for loc in checked_locations:
+                    error_msg += f"- {loc}\n"
+                error_msg += "\nAvailable versions:\n"
+                error_msg += f"- Release versions: {', '.join(available_versions)}\n"
+                error_msg += f"- Daily versions: {', '.join(daily_versions)}"
+                raise ValueError(error_msg)
 
             full_version = matching_versions[-1]
             print(f"Found version in daily builds: {full_version}")
