@@ -30,25 +30,6 @@ def get_release_versions():
     return sorted_versions
 
 
-def get_daily_versions():
-    print("Fetching available daily builds...")
-    url = "https://builder.blender.org/download/"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    versions = set()
-    build_container = soup.find(id="builds-container")
-    for link in build_container.find_all("a", href=True):
-        href = link["href"]
-        match = re.search(r"blender-(\d+\.\d+\.\d+)", href)
-        if match:
-            versions.add(match.group(1))
-
-    sorted_versions = sorted(versions)
-    print(f"Found {len(sorted_versions)} daily versions")
-    return sorted_versions
-
-
 def get_latest_patch_version(base_version):
     print(f"Checking patch versions for {base_version}...")
     url = f"https://download.blender.org/release/Blender{base_version}/"
@@ -68,14 +49,81 @@ def get_latest_patch_version(base_version):
     return full_version
 
 
+def get_latest_builds():
+    print("Fetching latest daily builds...")
+    url = "https://builder.blender.org/download/daily/"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    builds = {
+        "windows": {"x64": None, "arm64": None},
+        "macos": {"x64": None, "arm64": None},
+        "linux": {"x64": None},
+    }
+
+    def get_version(href):
+        match = re.search(r"blender-(\d+\.\d+\.\d+)", href)
+        return match.group(1) if match else "0.0.0"
+
+    platform_links = {
+        "windows": {"x64": [], "arm64": []},
+        "macos": {"x64": [], "arm64": []},
+        "linux": {"x64": []},
+    }
+
+    build_container = soup.find(id="builds-container")
+    for link in build_container.find_all("a", href=True):
+        href = link["href"]
+        if not href.endswith((".zip", ".dmg", ".tar.xz")):
+            continue
+
+        if "windows" in href:
+            if "arm64" in href:
+                platform_links["windows"]["arm64"].append(href)
+            else:
+                platform_links["windows"]["x64"].append(href)
+        elif "darwin" in href:
+            if "arm64" in href:
+                platform_links["macos"]["arm64"].append(href)
+            else:
+                platform_links["macos"]["x64"].append(href)
+        elif "linux" in href:
+            platform_links["linux"]["x64"].append(href)
+
+    try:
+        with open(os.environ["GITHUB_ENV"], "a") as f:
+            for platform in builds:
+                for arch in builds[platform]:
+                    if platform_links[platform][arch]:
+                        latest = max(platform_links[platform][arch], key=get_version)
+                        env_name = f"BLEND_URL_{platform.upper()}_{arch.upper()}"
+                        f.write(f"{env_name}={latest}\n")
+                        print(f"Set {env_name}")
+    except KeyError:
+        print("Running in local environment, displaying URLs:")
+        for platform in builds:
+            for arch in builds[platform]:
+                if platform_links[platform][arch]:
+                    latest = max(platform_links[platform][arch], key=get_version)
+                    env_name = f"BLEND_URL_{platform.upper()}_{arch.upper()}"
+                    print(f"{env_name}={latest}")
+
+    return builds
+
+
 def set_versions(version):
     if version.lower() == "daily":
         available_versions = get_daily_versions()
         full_version = available_versions[-1] if available_versions else "0.0.0"
         base_version = ".".join(full_version.split(".")[:2])
+        print(f"Using latest daily build: {full_version}")
     else:
         base_version = ".".join(version.split(".")[:2])
         if re.match(r"^\d+\.\d+$", version):
+            available_versions = get_release_versions()
+            if base_version not in available_versions:
+                print(f"Version {base_version} not found in releases")
+                sys.exit(1)
             full_version = get_latest_patch_version(base_version)
         else:
             full_version = version
@@ -93,6 +141,25 @@ def set_versions(version):
         print(f"IS_DAILY={'true' if version.lower() == 'daily' else 'false'}")
 
     return base_version, full_version
+
+
+def get_daily_versions():
+    print("Fetching available daily builds...")
+    url = "https://builder.blender.org/download/"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    versions = set()
+    build_container = soup.find(id="builds-container")
+    for link in build_container.find_all("a", href=True):
+        href = link["href"]
+        match = re.search(r"blender-(\d+\.\d+\.\d+)", href)
+        if match:
+            versions.add(match.group(1))
+
+    sorted_versions = sorted(versions)
+    print(f"Found {len(sorted_versions)} daily versions")
+    return sorted_versions
 
 
 def main():
