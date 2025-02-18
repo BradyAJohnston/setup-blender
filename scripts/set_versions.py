@@ -39,7 +39,7 @@ def get_latest_patch_version(base_version):
     versions = set()
     for link in soup.find_all("a", href=True):
         href = link["href"]
-        match = re.search(f"blender-{base_version}\.(\d+)-", href)
+        match = re.search(rf"blender-{base_version}\.(\d+)-", href)
         if match:
             versions.add(int(match.group(1)))
 
