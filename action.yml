@@ -1,15 +1,15 @@
-name: 'Setup Blender'
-description: 'Downloads and installs Blender for use in GitHub Actions'
+name: "Setup Blender"
+description: "Downloads and installs Blender for use in GitHub Actions"
 inputs:
   version:
-    description: 'Blender version to install (e.g. 4.2 or 4.2.1)'
+    description: "Blender version to install (e.g. 4.2 or 4.2.1)"
     required: true
-  
+
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Install uv
-      uses: astral-sh/setup-uv@v4
+      uses: astral-sh/setup-uv@v5
       with:
         version: "latest"
     - name: Set version variables
