@@ -53,10 +53,10 @@ def get_latest_release_base_version() -> str:
     """Return the highest base release version like '4.2'."""
     versions = get_release_versions()
     if not versions:
-        raise ValueError("No release versions found at https://download.blender.org/release/")
+        raise ValueError(
+            "No release versions found at https://download.blender.org/release/"
+        )
     return versions[-1]
-
-
 
 
 def get_latest_patch_version(base_version: str) -> str:
@@ -167,7 +167,7 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
         base_version = ".".join(normalized.split(".")[:2])
         available_versions = get_release_versions()
         checked_locations.append(
-            f"Release versions at https://download.blender.org/release/"
+            "Release versions at https://download.blender.org/release/"
         )
 
         if base_version in available_versions:
@@ -184,7 +184,7 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
             )
             daily_versions = get_daily_versions()
             checked_locations.append(
-                f"Daily builds at https://builder.blender.org/download/"
+                "Daily builds at https://builder.blender.org/download/"
             )
             matching_versions = [v for v in daily_versions if v.startswith(normalized)]
 
