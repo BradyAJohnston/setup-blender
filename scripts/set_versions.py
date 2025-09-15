@@ -49,6 +49,16 @@ def get_release_versions() -> List[str]:
     return sorted_versions
 
 
+def get_latest_release_base_version() -> str:
+    """Return the highest base release version like '4.2'."""
+    versions = get_release_versions()
+    if not versions:
+        raise ValueError("No release versions found at https://download.blender.org/release/")
+    return versions[-1]
+
+
+
+
 def get_latest_patch_version(base_version: str) -> str:
     print(f"Checking patch versions for {base_version}...")
     soup = fetch_url(f"https://download.blender.org/release/Blender{base_version}/")
@@ -133,7 +143,10 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
     env_vars = {}
     checked_locations = []
 
-    if version.lower() == "daily":
+    normalized = version.strip()
+    lower = normalized.lower()
+
+    if lower == "daily":
         available_versions = get_daily_versions()
         if not available_versions:
             raise ValueError(
@@ -144,8 +157,14 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
         print(f"Using latest daily build: {full_version}")
         is_daily = True
         target_version = full_version
+    elif lower == "latest":
+        base_version = get_latest_release_base_version()
+        full_version = get_latest_patch_version(base_version)
+        print(f"Using latest release: {full_version}")
+        is_daily = False
+        target_version = None
     else:
-        base_version = ".".join(version.split(".")[:2])
+        base_version = ".".join(normalized.split(".")[:2])
         available_versions = get_release_versions()
         checked_locations.append(
             f"Release versions at https://download.blender.org/release/"
@@ -154,8 +173,8 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
         if base_version in available_versions:
             full_version = (
                 get_latest_patch_version(base_version)
-                if re.match(r"^\d+\.\d+$", version)
-                else version
+                if re.match(r"^\d+\.\d+$", normalized)
+                else normalized
             )
             is_daily = False
             target_version = None
@@ -167,7 +186,7 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
             checked_locations.append(
                 f"Daily builds at https://builder.blender.org/download/"
             )
-            matching_versions = [v for v in daily_versions if v.startswith(version)]
+            matching_versions = [v for v in daily_versions if v.startswith(normalized)]
 
             if not matching_versions:
                 error_msg = (

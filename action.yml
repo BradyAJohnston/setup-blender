@@ -2,8 +2,9 @@ name: "Setup Blender"
 description: "Downloads and installs Blender for use in GitHub Actions"
 inputs:
   version:
-    description: "Blender version to install (e.g. 4.2 or 4.2.1)"
-    required: true
+    description: "Blender version to install: semantic (e.g. 4.2 or 4.2.1), or special values: daily | latest"
+    required: false
+    default: "latest"
 
 runs:
   using: "composite"
