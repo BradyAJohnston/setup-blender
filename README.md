@@ -40,7 +40,7 @@ jobs:
             fail-fast: false
             matrix:
               version: ["latest", "4.2", "daily"]
-              os: [macos-14, "ubuntu-latest", "windows-latest"]
+              os: [macos-latest, "ubuntu-latest", "windows-latest"]
         steps:
             - uses: actions/checkout@v4
             - name: Install Blender
