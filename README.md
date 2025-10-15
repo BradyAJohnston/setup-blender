@@ -42,7 +42,7 @@ jobs:
               version: ["latest", "4.2", "daily"]
               os: [macos-latest, "ubuntu-latest", "windows-latest"]
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
             - name: Install Blender
               uses: bradyajohnston/setup-blender@v5
               with:
