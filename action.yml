@@ -18,29 +18,45 @@ runs:
       run: |
         uv run ${{ github.action_path }}/scripts/set_versions.py ${{ inputs.version }}
 
+    - name: Restore Blender from cache
+      id: cache-blender
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          blender-download.*
+        key: blender-${{ runner.os }}-${{ runner.arch }}-${{ env.FULL_VERSION }}
+
     - name: Install Blender Linux
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        if [ "${IS_DAILY}" == "true" ]; then
-          wget -nv $BLEND_URL_LINUX_X64 -O ./blender.tar.xz
+        if [ ! -f "blender-download.tar.xz" ]; then
+          if [ "${IS_DAILY}" == "true" ]; then
+            wget -nv $BLEND_URL_LINUX_X64 -O ./blender-download.tar.xz
+          else
+            wget -nv https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-linux-x64.tar.xz -O ./blender-download.tar.xz
+          fi
         else
-          wget -nv https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-linux-x64.tar.xz -O ./blender.tar.xz
+          echo "Using cached Blender download"
         fi
         mkdir -p ../blender
-        tar -xf ./blender.tar.xz -C ../blender --strip-components=1
+        tar -xf ./blender-download.tar.xz -C ../blender --strip-components=1
         echo "$GITHUB_WORKSPACE/../blender" >> $GITHUB_PATH
 
     - name: Install Blender MacOS ARM
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        if [ "${IS_DAILY}" == "true" ]; then
-          curl -L -o blender.dmg $BLEND_URL_MACOS_ARM64
+        if [ ! -f "blender-download.dmg" ]; then
+          if [ "${IS_DAILY}" == "true" ]; then
+            curl -L -o blender-download.dmg $BLEND_URL_MACOS_ARM64
+          else
+            curl -L -o blender-download.dmg https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-macos-arm64.dmg
+          fi
         else
-          curl -L -o blender.dmg https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-macos-arm64.dmg
+          echo "Using cached Blender download"
         fi
-        hdiutil attach blender.dmg
+        hdiutil attach blender-download.dmg
         cp -R /Volumes/Blender/Blender.app /Applications/
         hdiutil detach /Volumes/Blender
         echo "/Applications/Blender.app/Contents/MacOS" >> $GITHUB_PATH
@@ -49,13 +65,25 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        if ($env:IS_DAILY -eq $true) {
-          Invoke-WebRequest -Uri $env:BLEND_URL_WINDOWS_X64 -OutFile "blender.zip"
+        if (-not (Test-Path "blender-download.zip")) {
+          if ($env:IS_DAILY -eq $true) {
+            Invoke-WebRequest -Uri $env:BLEND_URL_WINDOWS_X64 -OutFile "blender-download.zip"
+          } else {
+            Invoke-WebRequest -Uri "https://download.blender.org/release/Blender${env:BLENDER_BASE_VERSION}/blender-${env:FULL_VERSION}-windows-x64.zip" -OutFile "blender-download.zip"
+          }
         } else {
-          Invoke-WebRequest -Uri "https://download.blender.org/release/Blender${env:BLENDER_BASE_VERSION}/blender-${env:FULL_VERSION}-windows-x64.zip" -OutFile "blender.zip"
+          Write-Host "Using cached Blender download"
         }
-        Expand-Archive -Path "blender.zip" -DestinationPath "temp"
+        Expand-Archive -Path "blender-download.zip" -DestinationPath "temp"
         $blenderDir = Get-ChildItem -Path "temp" | Select-Object -First 1
         Move-Item -Path $blenderDir.FullName -Destination "../blender"
         Remove-Item -Path "temp"
         echo "$env:GITHUB_WORKSPACE/../blender" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    - name: Save Blender to cache
+      if: steps.cache-blender.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          blender-download.*
+        key: blender-${{ runner.os }}-${{ runner.arch }}-${{ env.FULL_VERSION }}

@@ -44,12 +44,23 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             - name: Install Blender
-              uses: bradyajohnston/setup-blender@v3
+              uses: bradyajohnston/setup-blender@v5
               with:
                 version: ${{ matrix.version }}
             - name: Run tests in Blender
               run: blender --version
 ```
+
+## Caching
+
+This action automatically caches downloaded Blender archives to speed up subsequent runs. The cache key is based on:
+- Operating system (`runner.os`)
+- Architecture (`runner.arch`)
+- Full Blender version (`FULL_VERSION`)
+
+When the same version is requested on the same platform, the cached download will be restored instead of downloading again. This significantly reduces action runtime and bandwidth usage.
+
+The cache is managed automatically by the action - no configuration is required.
 
 Notes:
 - `daily` builds come from the daily builder and are not official releases. Use for testing against upcoming changes.
