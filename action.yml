@@ -20,11 +20,12 @@ runs:
 
     - name: Restore Blender from cache
       id: cache-blender
+      if: env.CACHE_VERSION != ''
       uses: actions/cache/restore@v4
       with:
         path: |
           blender-download.*
-        key: blender-${{ runner.os }}-${{ runner.arch }}-${{ env.FULL_VERSION }}
+        key: blender-${{ runner.os }}-${{ runner.arch }}-${{ env.CACHE_VERSION }}
 
     - name: Install Blender Linux
       if: runner.os == 'Linux'
@@ -81,9 +82,9 @@ runs:
         echo "$env:GITHUB_WORKSPACE/../blender" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Save Blender to cache
-      if: steps.cache-blender.outputs.cache-hit != 'true'
+      if: env.CACHE_VERSION != '' && steps.cache-blender.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
         path: |
           blender-download.*
-        key: blender-${{ runner.os }}-${{ runner.arch }}-${{ env.FULL_VERSION }}
+        key: blender-${{ runner.os }}-${{ runner.arch }}-${{ env.CACHE_VERSION }}

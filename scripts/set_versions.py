@@ -6,11 +6,15 @@
 # ]
 # ///
 import os
+import platform
 import re
 import sys
 import requests
 from bs4 import BeautifulSoup
 from typing import Tuple, List
+
+# the commit hash in a daily filename, e.g. blender-5.3.0-alpha+main.16f3180fba1e-linux...
+BUILD_HASH_PATTERN = re.compile(r"\+\w+\.([0-9a-f]+)-")
 
 
 def fetch_url(url: str) -> BeautifulSoup:
@@ -107,17 +111,53 @@ def get_latest_builds(target_version: str = None) -> dict:
             platform_links["linux"]["x64"].append(href)
 
     env_vars = {}
-    for platform, archs in platform_links.items():
+    for os_name, archs in platform_links.items():
         for arch, links in archs.items():
             if links:
                 latest = max(
                     links,
                     key=lambda x: re.search(r"blender-(\d+\.\d+\.\d+)", x).group(1),
                 )
-                env_name = f"BLEND_URL_{platform.upper()}_{arch.upper()}"
+                env_name = f"BLEND_URL_{os_name.upper()}_{arch.upper()}"
                 env_vars[env_name] = latest
 
     return env_vars
+
+
+def get_build_url_var() -> str:
+    """The BLEND_URL_* variable holding the build for the runner we're executing on."""
+    arch = "ARM64" if platform.machine().lower() in ("arm64", "aarch64") else "X64"
+    system = platform.system()
+    if system == "Windows":
+        return f"BLEND_URL_WINDOWS_{arch}"
+    if system == "Darwin":
+        return f"BLEND_URL_MACOS_{arch}"
+    return "BLEND_URL_LINUX_X64"
+
+
+def get_cache_version(full_version: str, build_urls: dict) -> str:
+    """
+    The version component of the cache key for a daily build.
+
+    Every daily of a series reports the same FULL_VERSION, so keying the cache on
+    that alone pins the first daily ever cached and never downloads another one.
+    The commit hash from the filename is what actually changes between builds.
+
+    Returns an empty string if the hash can't be read, which disables caching so a
+    change to Blender's filenames costs us a download rather than silently serving
+    a stale build forever.
+    """
+    url = build_urls.get(get_build_url_var())
+    if url is None:
+        print(f"No daily build URL for {get_build_url_var()}, caching disabled")
+        return ""
+
+    match = BUILD_HASH_PATTERN.search(url)
+    if match is None:
+        print(f"Could not read a build hash from {url}, caching disabled")
+        return ""
+
+    return f"{full_version}-{match.group(1)}"
 
 
 def get_daily_versions() -> List[str]:
@@ -213,7 +253,12 @@ def set_versions(version: str) -> Tuple[str, str, bool]:
     )
 
     if is_daily:
-        env_vars.update(get_latest_builds(target_version))
+        build_urls = get_latest_builds(target_version)
+        env_vars.update(build_urls)
+        env_vars["CACHE_VERSION"] = get_cache_version(full_version, build_urls)
+    else:
+        # a release version identifies its download exactly
+        env_vars["CACHE_VERSION"] = full_version
 
     write_github_env(env_vars)
     return base_version, full_version, is_daily
