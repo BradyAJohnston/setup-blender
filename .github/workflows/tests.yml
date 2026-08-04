@@ -25,3 +25,21 @@ jobs:
                 version: ${{ matrix.version }}
             - name: Run tests in Blender
               run: blender --version
+
+            # `blender --version` passes even when a months-old build was restored
+            # from the cache, so check the build we got is the one we resolved
+            - name: Check the installed daily is the resolved daily
+              if: matrix.version == 'daily' && env.CACHE_VERSION != ''
+              shell: bash
+              run: |
+                installed=$(blender --version | sed -n 's/.*build hash:[[:space:]]*\([0-9a-f]\{6,\}\).*/\1/p' | head -n 1)
+                echo "resolved: ${CACHE_VERSION}"
+                echo "installed: ${installed}"
+                if [ -z "${installed}" ]; then
+                  echo "::error::could not read a build hash from 'blender --version'"
+                  exit 1
+                fi
+                if [ "${CACHE_VERSION}" != "${FULL_VERSION}-${installed}" ]; then
+                  echo "::error::installed daily ${installed} is not the resolved build ${CACHE_VERSION} - a stale cache was restored"
+                  exit 1
+                fi
