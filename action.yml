@@ -10,7 +10,7 @@ runs:
   using: "composite"
   steps:
     - name: Install uv
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@v10.0.1
       with:
         version: "latest"
     - name: Set version variables
@@ -21,7 +21,7 @@ runs:
     - name: Restore Blender from cache
       id: cache-blender
       if: env.CACHE_VERSION != ''
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v6.1.0
       with:
         path: |
           blender-download.*
@@ -83,7 +83,7 @@ runs:
 
     - name: Save Blender to cache
       if: env.CACHE_VERSION != '' && steps.cache-blender.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v6.1.0
       with:
         path: |
           blender-download.*
