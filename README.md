@@ -8,7 +8,7 @@ blender --version
 
 ## Versioning
 
-Pin to the major tag (`bradyajohnston/setup-blender@v5`) — it always points at the latest `v5.x` release, so you get updates automatically without bumping the version. Pin an exact tag (e.g. `@v5.1`) only if you need to freeze a specific release.
+Pin to the major tag (`bradyajohnston/setup-blender@v5`) — it always points at the latest `v5.x` release, so you get updates automatically without bumping the version. Pin an exact tag (e.g. `@v5.1.0`) only if you need to freeze a specific release.
 
 ## Inputs: version
 
