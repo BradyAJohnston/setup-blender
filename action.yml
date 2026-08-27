@@ -10,7 +10,8 @@ runs:
   using: "composite"
   steps:
     - name: Install uv
-      uses: astral-sh/setup-uv@v10
+      # setup-uv stopped publishing floating major tags after v7 — pin exact
+      uses: astral-sh/setup-uv@v10.0.1
       with:
         version: "latest"
     - name: Set version variables
