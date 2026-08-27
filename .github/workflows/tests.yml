@@ -12,7 +12,6 @@ jobs:
     build:
         runs-on: ${{ matrix.os }}
         strategy:
-            max-parallel: 4
             fail-fast: false
             matrix:
               version: ["daily", "latest", "4.2", "4.3", "4.4", "4.5", "5.2", "4.3.2", "4.1", "4.0.2"]
