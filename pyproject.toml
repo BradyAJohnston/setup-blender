@@ -1,0 +1,27 @@
+[project]
+name = "setup-blender"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.34.2",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.3",
+    "ty>=0.0.97",
+]
+
+# The project is only for developing the action: its scripts declare their own
+# dependencies inline, which is what `uv run` uses when the action runs
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B"]
+
+[tool.ty.src]
+include = ["scripts"]
