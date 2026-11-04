@@ -1,0 +1,19 @@
+name: Lint
+
+on:
+    push:
+      branches: ["main"]
+    pull_request:
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7.0.1
+            - uses: astral-sh/setup-uv@v10.0.1
+            - name: Check formatting
+              run: uv run --locked ruff format --diff
+            - name: Lint
+              run: uv run --locked ruff check
+            - name: Type check
+              run: uv run --locked ty check

@@ -21,23 +21,31 @@ runs:
 
     - name: Restore Blender from cache
       id: cache-blender
-      if: env.CACHE_VERSION != ''
+      if: env.CACHE_VERSION != '' || env.CACHE_FALLBACK != ''
       uses: actions/cache/restore@v6
       with:
         path: |
           blender-download.*
-        key: blender-${{ runner.os }}-${{ runner.arch }}-${{ env.CACHE_VERSION }}
+        # when the version couldn't be resolved, fall back to the newest cached
+        # build of the requested series (CACHE_FALLBACK is only set then)
+        key: blender-${{ runner.os }}-${{ runner.arch }}-${{ env.CACHE_VERSION || 'unresolved' }}
+        restore-keys: ${{ env.CACHE_FALLBACK != '' && format('blender-{0}-{1}-{2}', runner.os, runner.arch, env.CACHE_FALLBACK) || '' }}
 
     - name: Install Blender Linux
       if: runner.os == 'Linux'
       shell: bash
       run: |
         if [ ! -f "blender-download.tar.xz" ]; then
-          if [ "${IS_DAILY}" == "true" ]; then
-            wget -nv $BLEND_URL_LINUX_X64 -O ./blender-download.tar.xz
-          else
-            wget -nv https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-linux-x64.tar.xz -O ./blender-download.tar.xz
+          if [ -z "${FULL_VERSION}" ]; then
+            echo "::error::Could not resolve the Blender version and there is no cached build to fall back to"
+            exit 1
           fi
+          if [ "${IS_DAILY}" == "true" ]; then
+            url=$BLEND_URL_LINUX_X64
+          else
+            url=${BLENDER_RELEASE_URL}Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-linux-x64.tar.xz
+          fi
+          wget -nv --tries=5 --waitretry=10 --retry-connrefused --retry-on-http-error=403,429,500,502,503,504 "$url" -O ./blender-download.tar.xz
         else
           echo "Using cached Blender download"
         fi
@@ -50,11 +58,16 @@ runs:
       shell: bash
       run: |
         if [ ! -f "blender-download.dmg" ]; then
-          if [ "${IS_DAILY}" == "true" ]; then
-            curl -L -o blender-download.dmg $BLEND_URL_MACOS_ARM64
-          else
-            curl -L -o blender-download.dmg https://download.blender.org/release/Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-macos-arm64.dmg
+          if [ -z "${FULL_VERSION}" ]; then
+            echo "::error::Could not resolve the Blender version and there is no cached build to fall back to"
+            exit 1
           fi
+          if [ "${IS_DAILY}" == "true" ]; then
+            url=$BLEND_URL_MACOS_ARM64
+          else
+            url=${BLENDER_RELEASE_URL}Blender${BLENDER_BASE_VERSION}/blender-${FULL_VERSION}-macos-arm64.dmg
+          fi
+          curl -L --fail --retry 5 --retry-delay 10 --retry-all-errors -o blender-download.dmg "$url"
         else
           echo "Using cached Blender download"
         fi
@@ -68,11 +81,16 @@ runs:
       shell: pwsh
       run: |
         if (-not (Test-Path "blender-download.zip")) {
-          if ($env:IS_DAILY -eq $true) {
-            Invoke-WebRequest -Uri $env:BLEND_URL_WINDOWS_X64 -OutFile "blender-download.zip"
-          } else {
-            Invoke-WebRequest -Uri "https://download.blender.org/release/Blender${env:BLENDER_BASE_VERSION}/blender-${env:FULL_VERSION}-windows-x64.zip" -OutFile "blender-download.zip"
+          if (-not $env:FULL_VERSION) {
+            Write-Host "::error::Could not resolve the Blender version and there is no cached build to fall back to"
+            exit 1
           }
+          if ($env:IS_DAILY -eq $true) {
+            $url = $env:BLEND_URL_WINDOWS_X64
+          } else {
+            $url = "${env:BLENDER_RELEASE_URL}Blender${env:BLENDER_BASE_VERSION}/blender-${env:FULL_VERSION}-windows-x64.zip"
+          }
+          Invoke-WebRequest -Uri $url -OutFile "blender-download.zip" -MaximumRetryCount 5 -RetryIntervalSec 10
         } else {
           Write-Host "Using cached Blender download"
         }

@@ -26,6 +26,8 @@ The action also sets helpful environment variables:
 - `IS_DAILY`: `true` if using a daily build, otherwise `false`.
 - `CACHE_VERSION`: The version component of the cache key (see [Caching](#caching)).
 - Daily builds only: `BLEND_URL_WINDOWS_X64`, `BLEND_URL_WINDOWS_ARM64`, `BLEND_URL_MACOS_X64`, `BLEND_URL_MACOS_ARM64`, `BLEND_URL_LINUX_X64`.
+- Releases only: `BLENDER_RELEASE_URL`, the release host the version was found on (`https://download.blender.org/release/` or a mirror).
+- `CACHE_FALLBACK`: Set only when the version could not be resolved (see [When Blender's servers refuse the runner](#when-blenders-servers-refuse-the-runner)).
 
 Example workflow installing Blender for multiple versions across OSes, then printing the version:
 ```yaml
@@ -68,6 +70,15 @@ The build hash matters because every daily in a series reports the same version.
 When the same version is requested on the same platform, the cached download will be restored instead of downloading again. This significantly reduces action runtime and bandwidth usage.
 
 The cache is managed automatically by the action - no configuration is required. If the build hash for a daily cannot be determined, caching is skipped for that run so a fresh build is always downloaded.
+
+## When Blender's servers refuse the runner
+
+download.blender.org is behind Cloudflare, which sometimes refuses GitHub's runners with a 403. To ride this out:
+
+- Daily builds, and whether a series is released yet, come from the builder's JSON API at https://builder.blender.org, which isn't behind Cloudflare. A series with only alpha or beta builds there installs the daily without asking download.blender.org at all.
+- Every request is retried with a backoff, and Cloudflare challenge pages are treated as failures rather than as empty listings.
+- Releases are listed from official mirrors when download.blender.org doesn't answer, and downloaded from whichever host listed them.
+- If no host answers for `4.2` or `4.3.2`, the newest cached build of `4.2.*` or `4.3.2*` is restored instead, with a warning. `daily` and `latest` have no such fallback, as any cached build could be the wrong one.
 
 Notes:
 - `daily` builds come from the daily builder and are not official releases. Use for testing against upcoming changes.
